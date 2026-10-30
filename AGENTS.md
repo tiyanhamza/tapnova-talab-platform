@@ -13,6 +13,7 @@
    - `neon-postgres` for SQL, schema, connections, migrations, and diagnostics.
    Official docs: https://neon.com/docs/ai/ai-agents-tools.md
 2. Reuse the existing Neon project and default branch. Never create a replacement project just because a credential or environment variable is missing.
+   - The committed `.neon` context file pins this repository to the existing Neon organization, project, and production branch. It contains IDs only, never credentials; do not overwrite it with another project.
 3. Use the pooled Neon connection string in `DATABASE_URL` for Vercel application traffic. Use a direct/unpooled connection only for migrations and maintenance.
 4. Never print, commit, log, expose, or ask the user to paste database URLs, passwords, API keys, admin codes, or other secrets. Do not retrieve decrypted Vercel environment values just to inspect them.
 5. If `DATABASE_URL` is missing in Vercel, report that exact missing key and give the user a safe way to add it through Neon and Vercel. Do not invent a connection string.
