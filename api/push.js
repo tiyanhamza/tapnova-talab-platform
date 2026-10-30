@@ -26,7 +26,7 @@ async function telegramSetup(req,res){
  if(!me.ok)return send(res,502,{error:"Telegram rejected the bot token"});
  const host=String(req.headers["x-forwarded-host"]||req.headers.host||"").split(",")[0].trim(),base=process.env.APP_URL||("https://"+host);
  const secret=crypto.createHash("sha256").update(token).digest("hex");
- const hook=await fetch("https://api.telegram.org/bot"+token+"/setWebhook",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:base.replace(/\\/$/,"")+"/api/push?telegram=webhook",secret_token:secret,allowed_updates:["message"]})}).then(r=>r.json());
+ const hook=await fetch("https://api.telegram.org/bot"+token+"/setWebhook",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:(base.endsWith("/")?base.slice(0,-1):base)+"/api/push?telegram=webhook",secret_token:secret,allowed_updates:["message"]})}).then(r=>r.json());
  if(!hook.ok)return send(res,502,{error:hook.description||"Could not register Telegram webhook"});
  return send(res,200,{ok:true,bot_username:me.result.username,webhook:true});
 }
@@ -49,7 +49,7 @@ async function telegramWebhook(req,res){
  if(String(req.headers["x-telegram-bot-api-secret-token"]||"")!==expected)return send(res,401,{error:"Invalid webhook secret"});
  const msg=req.body?.message,chatId=msg?.chat?.id,text=String(msg?.text||"");
  if(!chatId||!text.startsWith("/start"))return send(res,200,{ok:true});
- const raw=text.trim().split(/\\s+/)[1]||"";
+ const raw=text.trim().split(" ")[1]||"";
  if(!raw){await telegramReply(token,chatId,"مرحباً بك في TapNova Talab. افتح رابط الدعوة من هاتف النادل لربط هذا الجهاز.");return send(res,200,{ok:true})}
  const pool=db();
  const linked=await pool.query("update waiter_devices set telegram_chat_id=$1,telegram_username=$2,telegram_link_token_hash=null,telegram_link_expires_at=null where telegram_link_token_hash=$3 and telegram_link_expires_at>now() and active=true returning device_name",[String(chatId),String(msg.from?.username||""),hash(raw)]);
