@@ -49,6 +49,11 @@ module.exports = async (req,res) => {
       const x=await pool.query("insert into dining_tables(restaurant_id,table_number,public_token,is_active) values($1,$2,$3,true) returning *",[rid,number,token]);
       return send(res,201,{table:x.rows[0]});
     }
+    if(req.method==="PATCH"&&action==="restaurant"){
+      for(const field of ["logo_url","cover_url"])if(typeof b[field]==="string"&&b[field].length>1800000)return send(res,413,{error:"Image too large. Choose a smaller image."});
+      const x=await pool.query("update restaurants set name=coalesce($1,name),description=coalesce($2,description),phone=coalesce($3,phone),address=coalesce($4,address),logo_url=coalesce($5,logo_url),cover_url=coalesce($6,cover_url) where id=$7 returning *",[b.name??null,b.description??null,b.phone??null,b.address??null,b.logo_url??null,b.cover_url??null,rid]);
+      return send(res,200,{restaurant:x.rows[0]||null});
+    }
     if(req.method==="PATCH"&&action==="order"){
       const status=String(b.status||"");
       if(!["new","preparing","ready","delivered","cancelled"].includes(status))return send(res,400,{error:"Invalid order status"});
@@ -62,7 +67,9 @@ module.exports = async (req,res) => {
       return send(res,200,{request:x.rows[0]||null});
     }
     if(req.method==="PATCH"&&action==="product"){
-      const x=await pool.query("update products set name_ar=coalesce($1,name_ar),name_fr=coalesce($2,name_fr),price=coalesce($3,price),image_url=coalesce($4,image_url),is_available=coalesce($5,is_available) where id=$6 and restaurant_id=$7 returning *",[b.name_ar??null,b.name_fr??null,b.price===undefined?null:Number(b.price),b.image_url??null,b.is_available===undefined?null:Boolean(b.is_available),b.id,rid]);
+      if(b.price!==undefined&&(!Number.isFinite(Number(b.price))||Number(b.price)<0))return send(res,400,{error:"Invalid product price"});
+      if(typeof b.image_url==="string"&&b.image_url.length>1800000)return send(res,413,{error:"Image too large. Choose a smaller image."});
+      const x=await pool.query("update products set name_ar=coalesce($1,name_ar),name_fr=coalesce($2,name_fr),description_ar=coalesce($3,description_ar),description_fr=coalesce($4,description_fr),price=coalesce($5,price),image_url=coalesce($6,image_url),category_id=coalesce($7,category_id),is_available=coalesce($8,is_available) where id=$9 and restaurant_id=$10 returning *",[b.name_ar??null,b.name_fr??null,b.description_ar??null,b.description_fr??null,b.price===undefined?null:Number(b.price),b.image_url??null,b.category_id??null,b.is_available===undefined?null:Boolean(b.is_available),b.id,rid]);
       return send(res,200,{product:x.rows[0]||null});
     }
     if(req.method==="DELETE"&&action==="product"){
