@@ -1,8 +1,0 @@
-const crypto=require("crypto");const {db,admin,send}=require("./_db");const {hash,sign,verify}=require("./_tokens");
-module.exports=async(req,res)=>{try{const pool=db(),b=req.body||{};
-if(req.method==="POST"&&b.action==="login"){const slug=String(b.slug||"").trim(),code=String(b.code||"");const r=await pool.query("select id,name,slug,owner_code_hash from restaurants where slug=$1 and is_active=true limit 1",[slug]);if(!r.rowCount||!r.rows[0].owner_code_hash||hash(code)!==r.rows[0].owner_code_hash)return send(res,401,{error:"Code ou restaurant incorrect"});const token=sign({rid:r.rows[0].id,slug,role:"owner",exp:Date.now()+30*24*60*60*1000});return send(res,200,{token,restaurant:{id:r.rows[0].id,name:r.rows[0].name,slug}})}
-const token=(req.headers.authorization||"").replace(/^Bearer\s+/i,""),session=verify(token);if(!session||session.role!=="owner")return send(res,401,{error:"Session propriétaire invalide"});
-if(req.method==="POST"&&b.action==="waiter-invite"){const raw=crypto.randomBytes(24).toString("base64url");await pool.query("insert into waiter_invites(restaurant_id,token_hash,expires_at) values($1,$2,now()+interval '24 hours')",[session.rid,hash(raw)]);return send(res,201,{url:"/serveur.html?invite="+raw,expires_in_hours:24})}
-if(req.method==="GET"){const r=await pool.query("select name,slug from restaurants where id=$1",[session.rid]);return send(res,200,{restaurant:r.rows[0]||null})}
-return send(res,405,{error:"Method not allowed"});
-}catch(e){return send(res,e.status||500,{error:e.message})}};
