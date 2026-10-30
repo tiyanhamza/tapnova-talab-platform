@@ -36,6 +36,8 @@
 - Do not assume that a successful Vercel build means the database is connected. Verify `/api/health` and then test the real user flow.
 - Before claiming the product is complete, verify: database health, restaurant creation, category/product creation, table QR generation, public menu loading, order submission, and admin order status updates.
 - Validate and sanitize all user input; use parameterized SQL; avoid leaking internal error details to public clients.
+- Public table orders and waiter/bill requests must resolve a table using its unguessable `public_token`; never accept a visible table number as proof of table access.
+- Keep order status values aligned with the database constraint (`new`, `preparing`, `ready`, `delivered`, `cancelled`) and service-request statuses aligned with (`pending`, `acknowledged`, `completed`).
 - Protect administrative endpoints. The current shared `ADMIN_KEY` implementation is a temporary single-admin gate, not multi-user authentication. Do not claim that user accounts or role-based access are implemented unless they are actually added and tested.
 - The current product form accepts image URLs; do not claim direct image upload exists until a secure upload flow is implemented.
 - Keep the UI mobile-first and support Arabic RTL and French LTR.
