@@ -1,0 +1,4 @@
+const crypto=require("crypto");
+const {db,admin,send}=require("./_db");
+const {hash}=require("./_tokens");
+module.exports=async(req,res)=>{try{admin(req);if(req.method!=="POST")return send(res,405,{error:"Method not allowed"});const slug=String((req.body||{}).slug||"").trim();if(!slug)return send(res,400,{error:"slug is required"});const pool=db();const r=await pool.query("select id,name,slug from restaurants where slug=$1 and is_active=true",[slug]);if(!r.rowCount)return send(res,404,{error:"Restaurant not found"});const raw=crypto.randomBytes(32).toString("base64url");await pool.query("insert into waiter_invites(restaurant_id,token_hash,expires_at) values($1,$2,now()+interval '24 hours')",[r.rows[0].id,hash(raw)]);return send(res,201,{ok:true,restaurant:r.rows[0],invite_url:"/waiter.html?invite="+raw,expires_at:new Date(Date.now()+86400000).toISOString()})}catch(e){return send(res,e.status||500,{error:e.message})}};
