@@ -73,9 +73,9 @@ module.exports = async (req,res) => {
       return send(res,200,{request:x.rows[0]||null});
     }
     if(req.method==="PATCH"&&action==="product"){
-      if(b.price!==undefined&&(!Number.isFinite(Number(b.price))||Number(b.price)<0))return send(res,400,{error:"Invalid product price"});
+      if(b.price!==undefined&&(!Number.isFinite(Number(String(b.price).trim().replace(",",".")))||Number(String(b.price).trim().replace(",","."))<0))return send(res,400,{error:"دخل ثمن صحيح بالأرقام."});
       if(typeof b.image_url==="string"&&b.image_url.length>1800000)return send(res,413,{error:"Image too large. Choose a smaller image."});
-      const x=await pool.query("update products set name_ar=coalesce($1,name_ar),name_fr=coalesce($2,name_fr),description_ar=coalesce($3,description_ar),description_fr=coalesce($4,description_fr),price=coalesce($5,price),image_url=coalesce($6,image_url),category_id=coalesce($7,category_id),is_available=coalesce($8,is_available) where id=$9 and restaurant_id=$10 returning *",[b.name_ar??null,b.name_fr??null,b.description_ar??null,b.description_fr??null,b.price===undefined?null:Number(b.price),b.image_url??null,b.category_id??null,b.is_available===undefined?null:Boolean(b.is_available),b.id,rid]);
+      const x=await pool.query("update products set name_ar=coalesce($1,name_ar),name_fr=coalesce($2,name_fr),description_ar=coalesce($3,description_ar),description_fr=coalesce($4,description_fr),price=coalesce($5,price),image_url=coalesce($6,image_url),category_id=coalesce($7,category_id),is_available=coalesce($8,is_available) where id=$9 and restaurant_id=$10 returning *",[b.name_ar??null,b.name_fr??null,b.description_ar??null,b.description_fr??null,b.price===undefined?null:Number(String(b.price).trim().replace(",",".")),b.image_url??null,b.category_id??null,b.is_available===undefined?null:Boolean(b.is_available),b.id,rid]);
       return send(res,200,{product:x.rows[0]||null});
     }
     if(req.method==="DELETE"&&action==="product"){
