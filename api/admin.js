@@ -16,7 +16,7 @@ module.exports = async (req,res) => {
         pool.query("select * from products where restaurant_id=$1 order by sort_order,id",[id]),
         pool.query("select * from dining_tables where restaurant_id=$1 order by table_number",[id]),
         pool.query("select o.*,coalesce(json_agg(json_build_object('name',i.product_name,'quantity',i.quantity,'total',i.line_total)) filter(where i.id is not null),'[]') items from orders o left join order_items i on i.order_id=o.id where o.restaurant_id=$1 group by o.id order by o.created_at desc limit 100",[id]),
-        pool.query("select * from service_requests where restaurant_id=$1 order by created_at desc limit 100",[id])
+        pool.query("select s.*,coalesce(d.detail,case when s.request_type='waiter' then 'Appeler le serveur' else 'Demander l’addition' end) as request_label from service_requests s left join service_request_details d on d.request_id=s.id where s.restaurant_id=$1 order by s.created_at desc limit 100",[id])
       ]);
       return send(res,200,{restaurant:r,categories:categories.rows,products:products.rows,tables:tables.rows,orders:orders.rows,requests:requests.rows});
     }
