@@ -1,4 +1,5 @@
 const { db, send } = require("./_db");
+const { notify } = require("./_push");
 module.exports = async (req, res) => {
   try {
     const pool = db();
@@ -43,6 +44,7 @@ module.exports = async (req, res) => {
         const order = await client.query("insert into orders(restaurant_id,table_id,table_number,status,customer_note,subtotal,total) values($1,$2,$3,'new',$4,$5,$5) returning id,status,total,created_at", [restaurantId,tableId,tableNumber || "Takeaway",String(customer_note||"").slice(0,500),subtotal]);
         for (const item of clean) await client.query("insert into order_items(order_id,product_id,product_name,quantity,unit_price,line_total) values($1,$2,$3,$4,$5,$6)", [order.rows[0].id,item.product_id,item.product_name,item.quantity,item.unit_price,item.line_total]);
         await client.query("commit");
+        await notify(pool,restaurantId,{title:"طلبية جديدة · "+(tableNumber||"Takeaway"),body:clean.map(x=>x.product_name+" × "+x.quantity).join("، "),url:"/waiter.html"});
         return send(res, 201, { ok:true, order:order.rows[0] });
       } catch (e) { await client.query("rollback"); throw e; }
       finally { client.release(); }
