@@ -7,13 +7,25 @@ function db() {
     e.status = 503;
     throw e;
   }
-  if (!pool) pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: true },
-    max: 3,
-    idleTimeoutMillis: 10000,
-    connectionTimeoutMillis: 8000
-  });
+  if (!pool) {
+    const u = new URL(process.env.DATABASE_URL);
+    const config = {
+      host: u.hostname,
+      port: Number(u.port || 5432),
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: decodeURIComponent(u.pathname.replace(/^\//, "")),
+      ssl: { rejectUnauthorized: true },
+      max: 3,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 8000
+    };
+    const appName = u.searchParams.get("application_name");
+    const options = u.searchParams.get("options");
+    if (appName) config.application_name = appName;
+    if (options) config.options = options;
+    pool = new Pool(config);
+  }
   return pool;
 }
 function admin(req) {
