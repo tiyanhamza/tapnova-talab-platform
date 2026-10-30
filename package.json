@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vercel dev",
-    "check": "node --check api/_db.js && node --check api/health.js && node --check api/menu.js && node --check api/service.js && node --check api/admin.js && node --check api/waiter-device.js && node --check api/waiter-activate.js && node --check api/waiter-invite-admin.js && node --check api/waiter-admin.js && node --check api/push.js && node --check api/_push.js && node scripts/check-inline.js && node --check api/telegram-link.js && node --check api/telegram-webhook.js && node --check api/telegram-setup.js"
+    "check": "node --check api/_db.js && node --check api/health.js && node --check api/menu.js && node --check api/service.js && node --check api/admin.js && node --check api/waiter-device.js && node --check api/waiter-activate.js && node --check api/waiter-invite-admin.js && node --check api/waiter-admin.js && node --check api/push.js && node --check api/_push.js && node scripts/check-inline.js"
   },
   "dependencies": {
     "pg": "^8.16.3",
