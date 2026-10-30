@@ -51,13 +51,13 @@ module.exports = async (req,res) => {
     }
     if(req.method==="PATCH"&&action==="order"){
       const status=String(b.status||"");
-      if(!["new","accepted","preparing","ready","served","cancelled","paid"].includes(status))return send(res,400,{error:"Invalid order status"});
+      if(!["new","preparing","ready","delivered","cancelled"].includes(status))return send(res,400,{error:"Invalid order status"});
       const x=await pool.query("update orders set status=$1 where id=$2 and restaurant_id=$3 returning *",[status,b.id,rid]);
       return send(res,200,{order:x.rows[0]||null});
     }
     if(req.method==="PATCH"&&action==="request"){
       const status=String(b.status||"");
-      if(!["pending","done","cancelled"].includes(status))return send(res,400,{error:"Invalid request status"});
+      if(!["pending","acknowledged","completed"].includes(status))return send(res,400,{error:"Invalid request status"});
       const x=await pool.query("update service_requests set status=$1 where id=$2 and restaurant_id=$3 returning *",[status,b.id,rid]);
       return send(res,200,{request:x.rows[0]||null});
     }
