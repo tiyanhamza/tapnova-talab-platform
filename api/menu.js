@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
           const p = pr.rows[0], unit = Number(p.price), total = unit * qty;
           subtotal += total; clean.push({ product_id:p.id, product_name:p.name_ar, quantity:qty, unit_price:unit, line_total:total });
         }
-        const order = await client.query("insert into orders(restaurant_id,table_id,table_number,status,customer_note,subtotal,total) values($1,$2,$3,'new',$4,$5,$5) returning id,status,total,created_at", [restaurantId,tableId,tableNumber,String(customer_note||"").slice(0,500),subtotal]);
+        const order = await client.query("insert into orders(restaurant_id,table_id,table_number,status,customer_note,subtotal,total) values($1,$2,$3,'new',$4,$5,$5) returning id,status,total,created_at", [restaurantId,tableId,tableNumber || "Takeaway",String(customer_note||"").slice(0,500),subtotal]);
         for (const item of clean) await client.query("insert into order_items(order_id,product_id,product_name,quantity,unit_price,line_total) values($1,$2,$3,$4,$5,$6)", [order.rows[0].id,item.product_id,item.product_name,item.quantity,item.unit_price,item.line_total]);
         await client.query("commit");
         return send(res, 201, { ok:true, order:order.rows[0] });
