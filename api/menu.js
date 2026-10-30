@@ -25,8 +25,10 @@ module.exports = async (req, res) => {
         const restaurantId = rr.rows[0].id;
         let tableId = null, tableNumber = null;
         if (table) {
-          const tr = await client.query("select id,table_number from dining_tables where restaurant_id=$1 and (table_number::text=$2 or public_token=$2) and is_active=true limit 1", [restaurantId, String(table)]);
-          if (tr.rowCount) { tableId = tr.rows[0].id; tableNumber = tr.rows[0].table_number; }
+          const tr = await client.query("select id,table_number from dining_tables where restaurant_id=$1 and public_token=$2 and is_active=true limit 1", [restaurantId, String(table)]);
+          if (!tr.rowCount) throw Object.assign(new Error("Invalid table QR code"), { status: 400 });
+          tableId = tr.rows[0].id;
+          tableNumber = tr.rows[0].table_number;
         }
         let subtotal = 0;
         const clean = [];
