@@ -6,10 +6,10 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "check": "node --check api/_db.js && node --check api/health.js && node --check api/menu.js && node --check api/service.js && node --check api/admin.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.2",
     "pg": "^8.16.3"
   }
 }
