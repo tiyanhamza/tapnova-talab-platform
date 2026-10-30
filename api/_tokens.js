@@ -1,0 +1,5 @@
+const crypto=require("crypto");
+function hash(v){return crypto.createHash("sha256").update(String(v)).digest("hex")}
+function sign(payload){const body=Buffer.from(JSON.stringify(payload)).toString("base64url");const sig=crypto.createHmac("sha256",process.env.OWNER_SESSION_SECRET).update(body).digest("base64url");return body+"."+sig}
+function verify(token){try{const [body,sig]=String(token||"").split(".");const expected=crypto.createHmac("sha256",process.env.OWNER_SESSION_SECRET).update(body).digest();const actual=Buffer.from(sig,"base64url");if(actual.length!==expected.length||!crypto.timingSafeEqual(actual,expected))return null;const p=JSON.parse(Buffer.from(body,"base64url").toString());if(!p.exp||p.exp<Date.now())return null;return p}catch{return null}}
+module.exports={hash,sign,verify};
