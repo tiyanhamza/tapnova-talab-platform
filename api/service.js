@@ -1,4 +1,5 @@
 const { db, send } = require("./_db");
+const { notify } = require("./_push");
 const ALLOWED = new Set(["waiter","water","cutlery","clean_table","bill"]);
 module.exports = async (req, res) => {
   try {
@@ -16,6 +17,7 @@ module.exports = async (req, res) => {
     if (request_type !== "waiter" && request_type !== "bill") {
       await pool.query("insert into service_request_details(request_id,detail) values($1,$2)",[saved.rows[0].id,labels[request_type]]);
     }
+    await notify(pool,r.rows[0].id,{title:"طلب جديد · طاولة "+t.rows[0].table_number,body:labels[request_type],url:"/waiter.html"});
     return send(res,201,{ok:true,request:{...saved.rows[0],label:labels[request_type]}});
   } catch(e) { send(res,e.status||500,{error:e.message}); }
 };
