@@ -25,7 +25,8 @@ module.exports = async (req,res) => {
     if (req.method==="POST" && action==="restaurant") {
       const name=String(b.name||"").trim(), slug=String(b.slug||"").trim().toLowerCase().replace(/[^a-z0-9-]/g,"-").replace(/-+/g,"-");
       if (!name||!slug) return send(res,400,{error:"Restaurant name and slug are required"});
-      const x=await pool.query("insert into restaurants(name,slug,description,phone,address,currency,default_language) values($1,$2,$3,$4,$5,'MAD',$6) returning *",[name,slug,String(b.description||""),String(b.phone||""),String(b.address||""),b.language==="ar"?"ar":"fr"]);
+      for(const field of ["logo_url","cover_url"])if(typeof b[field]==="string"&&b[field].length>1800000)return send(res,413,{error:"Image too large. Choose a smaller image."});
+      const x=await pool.query("insert into restaurants(name,slug,description,phone,address,currency,default_language,logo_url,cover_url) values($1,$2,$3,$4,$5,'MAD',$6,$7,$8) returning *",[name,slug,String(b.description||""),String(b.phone||""),String(b.address||""),b.language==="ar"?"ar":"fr",String(b.logo_url||""),String(b.cover_url||"")]);
       return send(res,201,{restaurant:x.rows[0]});
     }
     const slug=String(b.slug||req.query.slug||"").trim();
@@ -39,6 +40,7 @@ module.exports = async (req,res) => {
     if(req.method==="POST"&&action==="product"){
       const price=Number(b.price);
       if(!String(b.name_ar||b.name_fr||"").trim()||!Number.isFinite(price)||price<0)return send(res,400,{error:"Product name and valid price are required"});
+      if(String(b.image_url||"").length>1800000)return send(res,413,{error:"Image too large. Choose a smaller image."});
       const x=await pool.query("insert into products(restaurant_id,category_id,name_ar,name_fr,description_ar,description_fr,price,image_url,is_available,sort_order) values($1,$2,$3,$4,$5,$6,$7,$8,true,$9) returning *",[rid,b.category_id||null,String(b.name_ar||b.name_fr),String(b.name_fr||b.name_ar),String(b.description_ar||""),String(b.description_fr||""),price,String(b.image_url||""),Number(b.sort_order)||0]);
       return send(res,201,{product:x.rows[0]});
     }
