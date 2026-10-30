@@ -5,6 +5,10 @@ module.exports = async (req,res) => {
     admin(req);
     const pool = db();
     if (req.method === "GET") {
+      if(String(req.query.list||"")==="1"){
+        const all=await pool.query("select id,name,slug from restaurants order by created_at desc");
+        return send(res,200,{restaurants:all.rows});
+      }
       const slug = String(req.query.slug || "").trim();
       const rr = slug
         ? await pool.query("select * from restaurants where slug=$1 limit 1",[slug])
