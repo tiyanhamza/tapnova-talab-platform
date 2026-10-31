@@ -42,18 +42,19 @@ module.exports = async (req,res) => {
       return send(res,201,{restaurant:x.rows[0]});
     }
     if(req.method==="POST" && action==="qr-import"){
-      const code=String(b.code||"").trim().toUpperCase(), target=String(b.target_url||"").trim();
-      if(!code||!target)return send(res,400,{error:"QR code and destination URL are required"});
-      let u;try{u=new URL(target)}catch(_){return send(res,400,{error:"Enter a valid http/https URL"})}
+      const code=String(b.code||"").trim().toUpperCase(), provider=String(b.provider_url||"").trim();
+      if(!code||!provider)return send(res,400,{error:"QR code label and Busalab scan URL are required"});
+      let u;try{u=new URL(provider)}catch(_){return send(res,400,{error:"Enter a valid Busalab QR URL"})}
       if(!["http:","https:"].includes(u.protocol))return send(res,400,{error:"Only http/https links are allowed"});
-      const x=await pool.query("insert into qr_stock(code,qr_type,target_url,status) values($1,'external',$2,'available') on conflict(code) do update set qr_type='external',target_url=excluded.target_url,restaurant_id=null,table_id=null,status='available',updated_at=now() returning *",[code,target]);
+      const x=await pool.query("insert into qr_stock(code,qr_type,provider_url,status) values($1,'external',$2,'available') on conflict(code) do update set qr_type='external',provider_url=excluded.provider_url,target_url=null,restaurant_id=null,table_id=null,status='available',updated_at=now() returning *",[code,provider]);
       return send(res,201,{qr:x.rows[0]});
     }
     if(req.method==="POST" && action==="qr-assign"){
       const code=String(b.code||"").trim().toUpperCase(), tableId=String(b.table_id||"").trim();
-      const tr=await pool.query("select id,restaurant_id from dining_tables where id=$1",[tableId]);
+      const tr=await pool.query("select t.id,t.restaurant_id,t.public_token,r.slug from dining_tables t join restaurants r on r.id=t.restaurant_id where t.id=$1",[tableId]);
       if(!tr.rowCount)return send(res,404,{error:"Table not found"});
-      const x=await pool.query("update qr_stock set qr_type='tapnova',restaurant_id=$1,table_id=$2,target_url=null,status='assigned',updated_at=now() where code=$3 returning *",[tr.rows[0].restaurant_id,tableId,code]);
+      const dest="/?slug="+encodeURIComponent(tr.rows[0].slug)+"&table="+encodeURIComponent(tr.rows[0].public_token);
+      const x=await pool.query("update qr_stock set restaurant_id=$1,table_id=$2,target_url=case when qr_type='external' then $4 else null end,status='assigned',updated_at=now() where code=$3 returning *",[tr.rows[0].restaurant_id,tableId,code,dest]);
       if(!x.rowCount)return send(res,404,{error:"QR code not found in stock"});
       return send(res,200,{qr:x.rows[0]});
     }
