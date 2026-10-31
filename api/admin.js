@@ -5,6 +5,10 @@ module.exports = async (req,res) => {
     admin(req);
     const pool = db();
     if (req.method === "GET") {
+      if(String(req.query.qr_stock||"")==="1"){
+        const rows=await pool.query("select q.*,r.name as restaurant_name,r.slug,t.table_number from qr_stock q left join restaurants r on r.id=q.restaurant_id left join dining_tables t on t.id=q.table_id order by q.created_at desc");
+        return send(res,200,{qr_stock:rows.rows});
+      }
       if(String(req.query.list||"")==="1"){
         const all=await pool.query("select id,name,slug from restaurants order by created_at desc");
         return send(res,200,{restaurants:all.rows});
