@@ -60,6 +60,18 @@ module.exports = async (req,res) => {
       const x=await pool.query("update restaurants set name=coalesce($1,name),description=coalesce($2,description),phone=coalesce($3,phone),address=coalesce($4,address),logo_url=coalesce($5,logo_url),cover_url=coalesce($6,cover_url) where id=$7 returning *",[b.name??null,b.description??null,b.phone??null,b.address??null,b.logo_url??null,b.cover_url??null,rid]);
       return send(res,200,{restaurant:x.rows[0]||null});
     }
+    if(req.method==="DELETE"&&action==="restaurant"){
+      const x=await pool.query("delete from restaurants where id=$1 returning id,slug",[rid]);
+      if(!x.rowCount)return send(res,404,{error:"Restaurant not found"});
+      return send(res,200,{ok:true,deleted:x.rows[0].slug});
+    }
+    if(req.method==="PATCH"&&action==="table"){
+      const raw=String(b.external_url||"").trim();
+      if(raw){let u;try{u=new URL(raw)}catch(_){return send(res,400,{error:"دخل رابط صحيح يبدأ بـ https:// أو http://."})}if(!["http:","https:"].includes(u.protocol))return send(res,400,{error:"الرابط خاصو يبدأ بـ https:// أو http://."})}
+      const x=await pool.query("update dining_tables set external_url=$1 where id=$2 and restaurant_id=$3 returning id,external_url",[raw||null,b.id,rid]);
+      if(!x.rowCount)return send(res,404,{error:"Table not found"});
+      return send(res,200,{table:x.rows[0]});
+    }
     if(req.method==="PATCH"&&action==="order"){
       const status=String(b.status||"");
       if(!["new","preparing","ready","delivered","cancelled"].includes(status))return send(res,400,{error:"Invalid order status"});
