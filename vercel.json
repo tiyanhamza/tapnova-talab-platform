@@ -7,6 +7,10 @@
   },
   "rewrites": [
     {
+      "source": "/q/:code",
+      "destination": "/api/qr?code=:code"
+    },
+    {
       "source": "/m/:slug",
       "destination": "/index.html?slug=:slug"
     },
