@@ -27,7 +27,7 @@ async function notify(pool,restaurantId,payload){
        const ext=(match[1].split("/")[1]||"jpg").replace("jpeg","jpg");
        const field="photo"+i;
        form.append(field,new Blob([Buffer.from(match[2],"base64")],{type:match[1]}), "product-"+i+"."+ext);
-       media.push({type:"photo",media:"attach://"+field,...(media.length===0?{caption,parse_mode:"HTML"}:{})});
+       media.push({type:"photo",media:"attach://"+field,...(media.length===0?{caption}:{})});
       }else if(/^https:\/\//i.test(url)){
        media.push({type:"photo",media:url,...(media.length===0?{caption,parse_mode:"HTML"}:{})});
       }
