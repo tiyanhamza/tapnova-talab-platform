@@ -24,6 +24,10 @@ module.exports = async (req,res) => {
       ]);
       return send(res,200,{restaurant:r,categories:categories.rows,products:products.rows,tables:tables.rows,orders:orders.rows,requests:requests.rows});
     }
+    if (req.method === "GET" && String(req.query.qr_stock||"")==="1") {
+      const rows=await pool.query("select q.*,r.name as restaurant_name,r.slug,t.table_number from qr_stock q left join restaurants r on r.id=q.restaurant_id left join dining_tables t on t.id=q.table_id order by q.created_at desc");
+      return send(res,200,{qr_stock:rows.rows});
+    }
     if (req.method !== "POST" && req.method !== "PATCH" && req.method !== "DELETE") return send(res,405,{error:"Method not allowed"});
     const b=req.body||{}, action=String(b.action||"");
     if (req.method==="POST" && action==="restaurant") {
@@ -32,6 +36,28 @@ module.exports = async (req,res) => {
       for(const field of ["logo_url","cover_url"])if(typeof b[field]==="string"&&b[field].length>1800000)return send(res,413,{error:"Image too large. Choose a smaller image."});
       const x=await pool.query("insert into restaurants(name,slug,description,phone,address,currency,default_language,logo_url,cover_url) values($1,$2,$3,$4,$5,'MAD',$6,$7,$8) returning *",[name,slug,String(b.description||""),String(b.phone||""),String(b.address||""),b.language==="ar"?"ar":"fr",String(b.logo_url||""),String(b.cover_url||"")]);
       return send(res,201,{restaurant:x.rows[0]});
+    }
+    if(req.method==="POST" && action==="qr-import"){
+      const code=String(b.code||"").trim().toUpperCase(), target=String(b.target_url||"").trim();
+      if(!code||!target)return send(res,400,{error:"QR code and destination URL are required"});
+      let u;try{u=new URL(target)}catch(_){return send(res,400,{error:"Enter a valid http/https URL"})}
+      if(!["http:","https:"].includes(u.protocol))return send(res,400,{error:"Only http/https links are allowed"});
+      const x=await pool.query("insert into qr_stock(code,qr_type,target_url,status) values($1,'external',$2,'available') on conflict(code) do update set qr_type='external',target_url=excluded.target_url,restaurant_id=null,table_id=null,status='available',updated_at=now() returning *",[code,target]);
+      return send(res,201,{qr:x.rows[0]});
+    }
+    if(req.method==="POST" && action==="qr-assign"){
+      const code=String(b.code||"").trim().toUpperCase(), tableId=String(b.table_id||"").trim();
+      const tr=await pool.query("select id,restaurant_id from dining_tables where id=$1",[tableId]);
+      if(!tr.rowCount)return send(res,404,{error:"Table not found"});
+      const x=await pool.query("update qr_stock set qr_type='tapnova',restaurant_id=$1,table_id=$2,target_url=null,status='assigned',updated_at=now() where code=$3 returning *",[tr.rows[0].restaurant_id,tableId,code]);
+      if(!x.rowCount)return send(res,404,{error:"QR code not found in stock"});
+      return send(res,200,{qr:x.rows[0]});
+    }
+    if(req.method==="POST" && action==="qr-unassign"){
+      const code=String(b.code||"").trim().toUpperCase();
+      const x=await pool.query("update qr_stock set restaurant_id=null,table_id=null,status='available',updated_at=now() where code=$1 returning *",[code]);
+      if(!x.rowCount)return send(res,404,{error:"QR code not found"});
+      return send(res,200,{qr:x.rows[0]});
     }
     const slug=String(b.slug||req.query.slug||"").trim();
     const rr=slug?await pool.query("select id from restaurants where slug=$1 limit 1",[slug]):await pool.query("select id from restaurants order by created_at desc limit 1");
