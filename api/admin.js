@@ -22,7 +22,7 @@ module.exports = async (req,res) => {
       const [categories,products,tables,orders,requests] = await Promise.all([
         pool.query("select * from categories where restaurant_id=$1 order by sort_order,id",[id]),
         pool.query("select * from products where restaurant_id=$1 order by sort_order,id",[id]),
-        pool.query("select t.*,q.code as qr_code,q.qr_type as stock_qr_type,q.target_url as stock_target_url from dining_tables t left join qr_stock q on q.table_id=t.id and q.status=\'assigned\' where t.restaurant_id=$1 order by t.table_number",[id]),
+        pool.query("select t.*,q.code as qr_code,q.qr_type as stock_qr_type,q.target_url as stock_target_url,q.provider_url as stock_provider_url from dining_tables t left join qr_stock q on q.table_id=t.id and q.status=\'assigned\' where t.restaurant_id=$1 order by t.table_number",[id]),
         pool.query("select o.*,coalesce(json_agg(json_build_object('name',i.product_name,'quantity',i.quantity,'total',i.line_total)) filter(where i.id is not null),'[]') items from orders o left join order_items i on i.order_id=o.id where o.restaurant_id=$1 group by o.id order by o.created_at desc limit 100",[id]),
         pool.query("select s.*,coalesce(d.detail,case when s.request_type='waiter' then 'Appeler le serveur' else 'Demander l’addition' end) as request_label from service_requests s left join service_request_details d on d.request_id=s.id where s.restaurant_id=$1 order by s.created_at desc limit 100",[id])
       ]);
